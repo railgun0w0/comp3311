@@ -1,0 +1,70 @@
+#!/usr/bin/python3
+# COMP3311 20T3 Ass3 ... print info about different releases for Movie
+
+import sys
+import psycopg2
+#from helpers import whatever, functions, you, need
+
+# define any local helper functions here
+
+# set up some globals
+
+usage = "Usage: rels 'PartialMovieTitle'"
+db = None
+
+# process command-line args
+
+argc = len(sys.argv)
+if argc != 2:
+  print(usage)
+  exit()
+
+name = sys.argv[1]
+
+
+
+
+
+
+# manipulate database
+try:
+  db = psycopg2.connect("dbname=imdb")
+  cur = db.cursor()
+  cur2 = db.cursor()
+  qry = "select title,start_year,id from movies where title ~* %s order by start_year,title"
+  cur.execute(qry,[name])
+  result = cur.fetchall()
+  if len(result) == 1:
+    qry2 = "select local_title,region,language from Movies inner join Aliases on Movies.id = Aliases.movie_id where Movies.id = %s group by Aliases.id,Movies.id order by ordering"
+    movieid = result[0][2]
+    cur2.execute(qry2,[movieid])
+    result2 = cur2.fetchall()
+    if len(result2) == 0:
+      print(f'{result[0][0]} ({result[0][1]}) has no alternative releases')
+    else:
+      print(f'{result[0][0]} ({result[0][1]}) was also released as ')
+      for tuple in result2:
+        string = ''
+        string += f'\'{tuple[0]}\' '
+        if tuple[1] != None and tuple[2] != None:
+          string += f'(region: {tuple[1].strip()}, language: {tuple[2].strip()})'
+        elif tuple[1] != None and tuple[2] == None:
+          string +=  f'(region: {tuple[1].strip()})'
+        elif tuple[1] == None and tuple[2] != None:
+          string += f'(language: {tuple[2].strip()})'
+        print(string)
+
+
+  elif(len(result) == 0):
+    print(f'No movie matching \'{name}\' ')
+  else:
+    print(f'Movies matching \'{name}\'   ')
+    print('========================')
+    for tuple in result:
+      print(f'{tuple[0]} ({tuple[1]})')
+  # ... add your code here ...
+except psycopg2.Error as err:
+  print("DB error: ", err)
+finally:
+  if db:
+    db.close()

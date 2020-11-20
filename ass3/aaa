@@ -1,0 +1,4 @@
+select title 
+from Movies mov
+inner join Aliases ali on mov.id = ali.movie_id
+group by mov.id
