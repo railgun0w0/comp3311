@@ -22,6 +22,10 @@ elif argc == 2:
   if num.isdigit() == False:
     print(usage)
     exit()
+  else:
+    if int(num) <= 0:
+      print(usage)
+      exit()
 
 
 

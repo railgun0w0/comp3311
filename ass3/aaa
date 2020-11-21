@@ -1,4 +1,32 @@
-select title 
+select Names.name, Acting_roles.played 
+from Acting_roles 
+inner join Names on Acting_roles.name_id = Names.id
+inner join Principals on Principals.name_id = Acting_roles.name_id and Principals.movie_id = Acting_roles.movie_id
+where Acting_roles.movie_id = 10293180
+order by Principals.ordering
+
+select * from Crew_roles where Crew_roles.movie_id = 10293180
+select * from Acting_roles where Acting_roles.movie_id = 10293180
+
+
+select title,start_year,id
 from Movies mov
-inner join Aliases ali on mov.id = ali.movie_id
-group by mov.id
+full join Crew_roles cr on cr.movie_id = mov.id
+full join Acting_roles ar on ar.movie_id = mov.id
+where cr.name_id = 20000490 or ar.name_id = 20000490
+group by title,start_year,id
+order by start_year,title
+
+
+select title,start_year,id
+from Movies mov
+inner join Principals pr on pr.movie_id = mov.id
+where pr.name_id = 20726072
+group by title,start_year,id
+order by start_year,title
+
+    full join Crew_roles cr on cr.movie_id = mov.id
+    full join Acting_roles ar on ar.movie_id = mov.id
+    
+   
+    

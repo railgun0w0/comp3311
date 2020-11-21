@@ -15,12 +15,98 @@ db = None
 # process command-line args
 
 argc = len(sys.argv)
+if argc < 2:
+  print(usage)
+  exit()
 
+if argc > 3:
+  print(usage)
+  exit()
+
+name = sys.argv[1]
+if argc == 3:
+  year = sys.argv[2]
+  if year.isdigit() == False:
+    print(usage)
+    exit()
 # manipulate database
 
 try:
   db = psycopg2.connect("dbname=imdb")
-  # ... add your code here ...
+  cur = db.cursor()
+  if argc == 3: 
+    qry = "select name,birth_year,death_year,id from Names where name ~* %s and birth_year = %s order by name,birth_year,id"
+    cur.execute(qry,[name,year])
+  else:
+    qry = "select name,birth_year,death_year,id from Names where name ~* %s order by name,birth_year,id"
+    cur.execute(qry,[name])
+  result = cur.fetchall()
+  if(len(result) == 0):
+    print(f'No name matching \'{name}\'')
+  elif len(result) == 1:
+    target = result[0]
+    if target[1] == None and target[2] == None:
+      print(f'Filmography for {target[0]} (???)')
+    elif target[1] == None and target[2] != None:
+      print(f'Filmography for {target[0]} (-{ target[2]})')
+    elif target[1] != None and target[2] == None:
+      print(f'Filmography for {target[0]} ({target[1]}-)')
+    else:
+      print(f'Filmography for {target[0]} ({target[1]}-{ target[2]})')
+    nameid = target[3]
+    print('===============')
+    qry = '''
+    select title,start_year,id
+    from Movies mov
+    inner join Principals pr on pr.movie_id = mov.id
+    where pr.name_id = %s
+    group by title,start_year,id
+    order by start_year,title
+    '''
+    cur.execute(qry,[nameid])
+    movierresult = cur.fetchall()
+    for tuple in movierresult:
+      print(f'{tuple[0]} ({tuple[1]})')
+      moveid = tuple[2]
+      #act 
+      actqry = '''
+      select played
+      from Acting_roles
+      where Acting_roles.name_id = %s and Acting_roles.movie_id = %s
+      order by played
+      '''
+      cur.execute(actqry,[nameid,moveid])
+      actresult = cur.fetchall()
+      for act in actresult:
+        print(f' playing {act[0]}')
+      #crew
+      crewqry = '''
+      select role
+      from Crew_roles
+      where Crew_roles.name_id = %s and Crew_roles.movie_id = %s
+      order by role
+      '''
+      cur.execute(crewqry,[nameid,moveid])
+      crewresult = cur.fetchall()
+      for crew in crewresult:
+        word = crew[0].replace('_',' ').capitalize()
+        print(f' as {word}')
+
+  else:
+    print(f'Names matching \'{name}\'')
+    print('===============')
+    for tuple in result:
+      if tuple[1] == None and  tuple[2] == None:
+        print(f'{tuple[0]} (???)')
+      elif tuple[1] == None and tuple[2] != None:
+        print(f'{tuple[0]} (-{ tuple[2]})')
+      elif tuple[1] != None and tuple[2] == None:
+        print(f'{tuple[0]} ({tuple[1]}-)')
+      else:
+        print(f'{tuple[0]} ({tuple[1]}-{ tuple[2]})')
+    
+      
+      
 except psycopg2.Error as err:
   print("DB error: ", err)
 finally:

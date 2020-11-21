@@ -42,7 +42,7 @@ try:
     if len(result2) == 0:
       print(f'{result[0][0]} ({result[0][1]}) has no alternative releases')
     else:
-      print(f'{result[0][0]} ({result[0][1]}) was also released as ')
+      print(f'{result[0][0]} ({result[0][1]}) was also released as')
       for tuple in result2:
         string = ''
         string += f'\'{tuple[0]}\' '
@@ -56,10 +56,10 @@ try:
 
 
   elif(len(result) == 0):
-    print(f'No movie matching \'{name}\' ')
+    print(f'No movie matching \'{name}\'')
   else:
-    print(f'Movies matching \'{name}\'   ')
-    print('========================')
+    print(f'Movies matching \'{name}\'')
+    print('===============')
     for tuple in result:
       print(f'{tuple[0]} ({tuple[1]})')
   # ... add your code here ...

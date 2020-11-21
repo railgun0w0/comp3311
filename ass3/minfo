@@ -15,12 +15,74 @@ db = None
 # process command-line args
 
 argc = len(sys.argv)
+if argc < 2:
+  print(usage)
+  exit()
 
+if argc > 3:
+  print(usage)
+  exit()
+
+name = sys.argv[1]
+if argc == 3:
+  year = sys.argv[2]
+  if year.isdigit() == False:
+    print(usage)
+    exit()
 # manipulate database
+
 
 try:
   db = psycopg2.connect("dbname=imdb")
-
+  cur = db.cursor()
+  if argc == 3: 
+    qry = "select title,start_year,id from movies where title ~* %s and start_year = %s   order by start_year,title"
+    cur.execute(qry,[name,year])
+  else:
+    qry = "select title,start_year,id from movies where title ~* %s order by start_year,title"
+    cur.execute(qry,[name])
+  result = cur.fetchall()
+  if(len(result) == 0):
+    if argc == 3:
+      print(f'No movie matching \'{name}\' {year}')
+    else:
+      print(f'No movie matching \'{name}\'')
+  elif len(result) == 1:
+    print(f'{result[0][0]} ({result[0][1]})')
+    print('===============')
+    print('Starring')
+    qry = '''
+    select Names.name, Acting_roles.played 
+    from Acting_roles 
+    inner join Names on Acting_roles.name_id = Names.id
+    inner join Principals on Principals.name_id = Acting_roles.name_id and Principals.movie_id = Acting_roles.movie_id
+    where Acting_roles.movie_id = %s
+    order by Principals.ordering, Names.name'''
+    cur.execute(qry,[result[0][2]])
+    actorresult = cur.fetchall()
+    for tuple in actorresult:
+      print(f' {tuple[0]} as {tuple[1]}')
+    print('and with')
+    qry = '''
+    select Names.name, Crew_roles.role 
+    from Crew_roles 
+    inner join Names on Crew_roles.name_id = Names.id
+    inner join Principals on Principals.name_id = Names.id and Principals.movie_id = Crew_roles.movie_id
+    where Crew_roles.movie_id = %s
+    group by Names.name, Crew_roles.role,Principals.ordering
+    order by Principals.ordering, Names.name'''
+    cur.execute(qry,[result[0][2]])
+    crewresult = cur.fetchall()
+    for tuple in crewresult:
+      print(f' {tuple[0]}: {tuple[1].capitalize()}')
+  else:
+    if argc == 3:
+      print(f'Movies matching \'{name}\' {year}')
+    else:
+      print(f'Movies matching \'{name}\'')
+    print('===============')
+    for tuple in result:
+      print(f'{tuple[0]} ({tuple[1]})')
   # ... add your code here ...
 
 except psycopg2.Error as err:
