@@ -4,7 +4,7 @@
 import sys
 import psycopg2
 #from helpers import whatever, functions, you, need
-
+from helpers import checkargv,checkyear
 # define any local helper functions here
 
 # set up some globals
@@ -15,24 +15,17 @@ db = None
 # process command-line args
 
 argc = len(sys.argv)
-if argc < 2:
-  print(usage)
-  exit()
-
-if argc > 3:
-  print(usage)
-  exit()
-
-name = sys.argv[1]
+checkargv(argc,usage)
 if argc == 3:
   year = sys.argv[2]
-  if year.isdigit() == False:
-    print(usage)
-    exit()
+  checkyear(year,usage)
+  
+name = sys.argv[1]
 # manipulate database
 
 
 try:
+
   db = psycopg2.connect("dbname=imdb")
   cur = db.cursor()
   if argc == 3: 
@@ -43,27 +36,31 @@ try:
     cur.execute(qry,[name])
   result = cur.fetchall()
   if(len(result) == 0):
+    # not find movie
     if argc == 3:
       print(f'No movie matching \'{name}\' {year}')
     else:
       print(f'No movie matching \'{name}\'')
   elif len(result) == 1:
+    # find movie! print act and crew list
     print(f'{result[0][0]} ({result[0][1]})')
     print('===============')
     print('Starring')
-    qry = '''
+    # search act 
+    actqry = '''
     select Names.name, Acting_roles.played 
     from Acting_roles 
     inner join Names on Acting_roles.name_id = Names.id
     inner join Principals on Principals.name_id = Acting_roles.name_id and Principals.movie_id = Acting_roles.movie_id
     where Acting_roles.movie_id = %s
     order by Principals.ordering, Names.name'''
-    cur.execute(qry,[result[0][2]])
+    cur.execute(actqry,[result[0][2]])
     actorresult = cur.fetchall()
-    for tuple in actorresult:
-      print(f' {tuple[0]} as {tuple[1]}')
+    for act in actorresult:
+      print(f' {act[0]} as {act[1]}')
     print('and with')
-    qry = '''
+    # search crew 
+    crewqry = '''
     select Names.name, Crew_roles.role 
     from Crew_roles 
     inner join Names on Crew_roles.name_id = Names.id
@@ -71,19 +68,20 @@ try:
     where Crew_roles.movie_id = %s
     group by Names.name, Crew_roles.role,Principals.ordering
     order by Principals.ordering, Names.name'''
-    cur.execute(qry,[result[0][2]])
+    cur.execute(crewqry,[result[0][2]])
     crewresult = cur.fetchall()
-    for tuple in crewresult:
-      print(f' {tuple[0]}: {tuple[1].capitalize()}')
+    for crew in crewresult:
+      word = crew[1].replace('_',' ').capitalize()
+      print(f' {crew[0]}: {word}')
   else:
+    # find mutilp movies, print all movies
     if argc == 3:
       print(f'Movies matching \'{name}\' {year}')
     else:
       print(f'Movies matching \'{name}\'')
     print('===============')
-    for tuple in result:
-      print(f'{tuple[0]} ({tuple[1]})')
-  # ... add your code here ...
+    for movie in result:
+      print(f'{movie[0]} ({movie[1]})')
 
 except psycopg2.Error as err:
   print("DB error: ", err)

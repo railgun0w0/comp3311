@@ -4,7 +4,7 @@
 import sys
 import psycopg2
 #from helpers import whatever, functions, you, need
-
+from helpers import printnameandbirth,checkargv,checkyear
 # define any local helper functions here
 
 # set up some globals
@@ -15,20 +15,12 @@ db = None
 # process command-line args
 
 argc = len(sys.argv)
-if argc < 2:
-  print(usage)
-  exit()
-
-if argc > 3:
-  print(usage)
-  exit()
-
-name = sys.argv[1]
+checkargv(argc,usage)
 if argc == 3:
   year = sys.argv[2]
-  if year.isdigit() == False:
-    print(usage)
-    exit()
+  checkyear(year,usage)
+  
+name = sys.argv[1]
 # manipulate database
 
 try:
@@ -42,19 +34,15 @@ try:
     cur.execute(qry,[name])
   result = cur.fetchall()
   if(len(result) == 0):
+    # cannot find person
     print(f'No name matching \'{name}\'')
   elif len(result) == 1:
+    # find one! print the name and prin movie!
     target = result[0]
-    if target[1] == None and target[2] == None:
-      print(f'Filmography for {target[0]} (???)')
-    elif target[1] == None and target[2] != None:
-      print(f'Filmography for {target[0]} (-{ target[2]})')
-    elif target[1] != None and target[2] == None:
-      print(f'Filmography for {target[0]} ({target[1]}-)')
-    else:
-      print(f'Filmography for {target[0]} ({target[1]}-{ target[2]})')
+    print('Filmography for ' + printnameandbirth(target))
     nameid = target[3]
     print('===============')
+    # find all movies this perple prin in
     qry = '''
     select title,start_year,id
     from Movies mov
@@ -65,9 +53,9 @@ try:
     '''
     cur.execute(qry,[nameid])
     movierresult = cur.fetchall()
-    for tuple in movierresult:
-      print(f'{tuple[0]} ({tuple[1]})')
-      moveid = tuple[2]
+    for movie in movierresult:
+      print(f'{movie[0]} ({movie[1]})')
+      moveid = movie[2]
       #act 
       actqry = '''
       select played
@@ -93,17 +81,11 @@ try:
         print(f' as {word}')
 
   else:
+    # find mulip people
     print(f'Names matching \'{name}\'')
     print('===============')
-    for tuple in result:
-      if tuple[1] == None and  tuple[2] == None:
-        print(f'{tuple[0]} (???)')
-      elif tuple[1] == None and tuple[2] != None:
-        print(f'{tuple[0]} (-{ tuple[2]})')
-      elif tuple[1] != None and tuple[2] == None:
-        print(f'{tuple[0]} ({tuple[1]}-)')
-      else:
-        print(f'{tuple[0]} ({tuple[1]}-{ tuple[2]})')
+    for name in result:
+      print(printnameandbirth(name))
     
       
       

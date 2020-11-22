@@ -13,30 +13,29 @@ usage = "Usage: best [N]"
 db = None
 
 # process command-line args
+# handle argv argc so that can print correct message
 num = 10
 argc = len(sys.argv)
 if argc > 2:
   print(usage)
+  exit()
 elif argc == 2:
   num = sys.argv[1]
-  if num.isdigit() == False:
+  if num.isdigit() == False or int(num) <= 0:
     print(usage)
     exit()
-  else:
-    if int(num) <= 0:
-      print(usage)
-      exit()
 
 
 
 try:
+  
   db = psycopg2.connect("dbname=imdb")
-  # ... add your code here ...
   cur = db.cursor()
   qry = "select rating,title,start_year from movies order by rating desc,title limit %s"
   cur.execute(qry,[num])
-  for tuple in cur.fetchall():
-   print(f'{tuple[0]} {tuple[1]} ({tuple[2]})')
+  for movie in cur.fetchall():
+   print(f'{movie[0]} {movie[1]} ({movie[2]})')
+
 except psycopg2.Error as err:
   print("DB error: ", err)
 finally:
